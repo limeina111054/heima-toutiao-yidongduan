@@ -1,6 +1,7 @@
 import axios from 'axios'
 import JSONBIGINT from 'json-bigint'
 import store from '@/store'
+import router from '@/router'
 
 const instance = axios.create({
   // 基准值
@@ -34,7 +35,36 @@ instance.interceptors.response.use(res => {
   } catch (e) {
     return res
   }
-}, err => Promise.reject(err))
+}, async err => {
+  // 判断当前状态码是否为401，出现两种情况没登陆或者没有携带token
+  if (err.response && err.response.status === 401) {
+    const loginConfig = { path: '/path',
+      query: { redirectUrl: router.currentRoute.path
+      } }
+    const user = store.state.user
+    if (!user || !user.token || !user.refresh.token) {
+      return router.push(loginConfig)
+    }
+    // 再一次发起请求刷新token
+    try {
+      const { data: { data } } = await axios({
+        url: 'http://ttapi.research.itcast.cn/app/v1_0/authorizations',
+        method: 'put',
+        headers: {
+          Authorization: `Bearer ${user.refresh_token}`
+        }
+      })
+      store.commit('setUser', { token: data.token,
+        refresh_token: user.refresh_token
+      })
+      return instance(err.config)
+    } catch (e) {
+      store.commit('delUser')
+      return router.push(loginConfig)
+    }
+  }
+  return Promise.reject(err)
+})
 
 // 调用接口（接口地址，请求参数，传参）
 export default (url, method, data) => {
