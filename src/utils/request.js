@@ -36,13 +36,13 @@ instance.interceptors.response.use(res => {
     return res
   }
 }, async err => {
-  // 判断当前状态码是否为401，出现两种情况没登陆或者没有携带token
+  // 判断当前状态码是否为401，出现两种情况没登陆或者没有携带//token
   if (err.response && err.response.status === 401) {
-    const loginConfig = { path: '/path',
+    const loginConfig = { path: '/login',
       query: { redirectUrl: router.currentRoute.path
       } }
     const user = store.state.user
-    if (!user || !user.token || !user.refresh.token) {
+    if (!user || !user.token || !user.refresh_token) {
       return router.push(loginConfig)
     }
     // 再一次发起请求刷新token
@@ -70,9 +70,9 @@ instance.interceptors.response.use(res => {
 export default (url, method, data) => {
   // params 选项是 get传参
   // data选项是其他方式传参
-  instance({
+  return instance({
     url,
     method,
-    [method.toLowercase() === 'get' ? 'params' : 'data']: data
+    [method.toLowerCase() === 'get' ? 'params' : 'data']: data
   })
 }

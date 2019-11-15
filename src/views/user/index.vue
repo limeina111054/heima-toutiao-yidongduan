@@ -1,5 +1,7 @@
 <template>
-  <div class='container'>User</div>
+  <div class='container'>
+    <van-nav-bar fixed left-text="搜索" @click-left="$router.back()" title="黑马头条">user</van-nav-bar>
+  </div>
 </template>
 
 <script>
