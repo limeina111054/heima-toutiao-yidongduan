@@ -1,6 +1,8 @@
 <template>
   <div class='container'>
-    <van-nav-bar fixed left-text="搜索" @click-left="$router.back()" title="黑马头条">user</van-nav-bar>
+    <div class='container'>
+      <van-nav-bar title="黑马头条" left-arrow @click-left="$router.back()"></van-nav-bar>user
+  </div>
   </div>
 </template>
 
@@ -10,4 +12,4 @@ export default {
 
 }
 </script>
-<style scoped lang='less'></style>
+<style scoped lang='less'></style>user
