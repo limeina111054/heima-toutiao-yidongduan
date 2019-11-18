@@ -1,9 +1,9 @@
 <template>
   <div class="container">
     <!-- 主页的基础布局 -->
-    <van-tabs swipeable v-model="activeIndex">
+    <van-tabs  swipeable v-model="activeIndex" :lazy-render="false" @change="changeChannel" >
       <van-tab :key="channel.id" v-for="channel in myChannels" :title="channel.name">
-        <div class="scroll-wrapper">
+        <div class="scroll-wrapper" ref="scroll-wrapper" @scroll="remember($event)">
           <van-cell-group>
             <van-pull-refresh
               v-model="activeChannel.downLoading"
@@ -16,25 +16,23 @@
                 finished-text="没有更多了"
                 @load="onload"
               >
-                <van-cell v-for="article in activeChannel.articles" :key="article.id">
+                <van-cell v-for="article in activeChannel.articles" :key="article.art_id.toString()">
                   <!-- 三张图 -->
                   <div class="article_item">
                     <h3 class="van-ellipsis">{{article.title}}</h3>
                     <div class="img_box" v-if="article.cover.type === 3">
-                      <van-image class="w33" fit="cover" :src="article.cover.images[0]" />
-                      <van-image class="w33" fit="cover" :src="article.cover.images[1]" />
-                      <van-image class="w33" fit="cover" :src="article.cover.images[2]" />
+                      <van-image class="w33" fit="cover" lazy-load :src="article.cover.images[0]" />
+                      <van-image class="w33" fit="cover" lazy-load :src="article.cover.images[1]" />
+                      <van-image class="w33" fit="cover" lazy-load :src="article.cover.images[2]" />
                     </div>s
                     <div class="img_box" v-if="article.cover.type === 1">
-                      <van-image class="w100" fit="cover" :src="article.cover.images[0]" />
+                      <van-image class="w100" fit="cover" lazy-load :src="article.cover.images[0]" />
                     </div>
                     <div class="info_box">
                   <span>{{article.aut_name}}</span>
                     <span>{{article.comm_count}} 评论</span>
                     <span>{{article.pubdate}}</span>
-                      <span class="close">
-                        <van-icon name="cross"></van-icon>
-                      </span>
+                    <span v-if="user.token" class="close" @click ="opnMoreAction"><van-icon name="cross"></van-icon></span>
                     </div>
                   </div>
                 </van-cell>
@@ -47,6 +45,7 @@
     <span class="bar_btn" slot="nav-right">
       <van-icon name="wap-nav"></van-icon>
     </span>
+    <more-action v-model="show"></more-action>
   </div>
 </template>
 
@@ -54,8 +53,12 @@
 // import { log } from 'util'
 import { getMyChannels } from '@/api/channel'
 import { getArticles } from '@/api/article'
+import { mapState } from 'vuex'
+import MoreAction from './componments/MoreAction'
 export default {
   name: 'home-index',
+  // 挂在
+  components: { MoreAction },
   data () {
     return {
       upLoading: false,
@@ -66,34 +69,77 @@ export default {
       articles: [],
       myChannels: [],
       // 激活索引为0的频道
-      activeIndex: 0
+      activeIndex: 0,
+      // 显示更多操作
+      show: false
+
     }
   },
   computed: {
     // 用计算属性写一个激活频道的方法
     activeChannel () {
       return this.myChannels[this.activeIndex]
+    },
+    ...mapState(['user'])
+  },
+  watch: {
+    user () {
+      this.activeIndex = 0
+      this.getMyChannels()
+      this.onload()
     }
+
   },
   created () {
-    // 获取频道数据
+    // 获取频道数据e
     this.getMyChannels()
   },
+
   methods: {
+    opnMoreAction () {
+      this.show = true
+    },
+    // 自己来加载数据（当前频道没有文章数据时)
+    changeChannel () {
+      if (!this.activeChannel.articles.length) {
+        this.activeChannel.upLoading = true
+        this.onload()
+      } else {
+        // 根据当前频道记录位置进行滚动(覆盖tab滚动到顶部的功能)
+        this.$nextTick(() => {
+          const dom = this.$refs['scroll-wrapper'][this.activeIndex]
+          dom.scrollTop = this.activeChannel.scrollTop
+        })
+      }
+    },
+    remember (e) {
+      this.activeChannel.scrollTop = e.target.scrollTop
+    },
+    // 组件缓存时才有，组件激活的钩子函数
+    activated () {
+      if (this.$refs['scroll-wrapper']) {
+        const dom = this.$refs['scroll-wrapper'][this.activeIndex]
+        dom.scrollTop = this.activeChannel.scrollTop
+      }
+    },
     async getMyChannels () {
       const data = await getMyChannels()
       // 渲染频道（标签页 tabs组件）
       this.myChannels = data.channels
-      this.myChannels = data.channels.map(item => {
-        return {
-          id: item.id,
-          name: item.name,
-          articles: [],
-          upLoading: false,
-          downLoading: false,
-          finished: false,
-          timestamp: Date.now()
-        }
+      this.myChannels = []// 清除tabs组件的缓存
+      this.$nextTick(() => {
+        this.myChannels = data.channels.map(item => {
+          return {
+            id: item.id,
+            name: item.name,
+            articles: [],
+            upLoading: false,
+            downLoading: false,
+            finished: false,
+            timestamp: Date.now(),
+            scrollTop: 0
+          }
+        })
       })
     },
     async onRefresh () {

@@ -21,7 +21,9 @@ const routes = [
     path: '/',
     component: Layout,
     children: [
-      { path: '/', name: 'home', component: Home },
+      // 怎么判断：给当前渲染组件的路由规则加上标识（数据），meta选项添加额外信息。判断那个需要按需加入
+      // { path: '/', name: 'home', component: Home },
+      { path: '/', name: 'home', component: Home, meta: { keepAlive: true } },
       { path: '/question', name: 'question', component: Question },
       { path: '/video', name: 'video', component: Video },
       { path: '/user', name: 'user', component: User }
@@ -32,7 +34,8 @@ const routes = [
   { path: '/user/chat', name: 'user-chat', component: UserChat },
   { path: '/search', name: 'search', component: Search },
   { path: '/search/result', name: 'search-result', component: SearchResult },
-  { path: '/article', name: 'article', component: Article }
+  // 怎么判断：给当前渲染组件的路由规则加上标识（数据），meta选项添加额外信息。判断那个需要按需加入
+  { path: '/article', name: 'article', component: Article, meta: { keepAlive: true } }
 
 ]
 
